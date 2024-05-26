@@ -1,0 +1,116 @@
+#!/bin/bash
+
+DATABASE="mydatabase.db"
+
+# Ensure the database and tables are created
+sqlite3 $DATABASE <<EOF
+CREATE TABLE IF NOT EXISTS quotes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    quote TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS todos (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    task TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending'
+);
+EOF
+
+usage() {
+    echo "Usage: $0 [option]"
+    echo "Options:"
+    echo "  -a, --add-quote QUOTE       Add a new quote"
+    echo "  -v, --view-quotes           View all quotes"
+    echo "  -t, --add-todo TASK         Add a new to-do"
+    echo "  -l, --view-todos            View all to-dos"
+    echo "  -d, --mark-done ID          Mark a to-do as done by ID"
+    echo "  -h, --help                  Show this help message"
+}
+
+add_quote() {
+    QUOTE="$1"
+    sqlite3 $DATABASE "INSERT INTO quotes (quote) VALUES ('$QUOTE');"
+    echo "Quote added: $QUOTE"
+}
+
+view_quotes() {
+    sqlite3 $DATABASE "SELECT id, quote FROM quotes;" | while IFS="|" read -r id quote; do
+        echo "[$id] $quote"
+    done
+}
+
+add_todo() {
+    TASK="$1"
+    sqlite3 $DATABASE "INSERT INTO todos (task) VALUES ('$TASK');"
+    echo "To-Do added: $TASK"
+}
+
+view_todos() {
+    sqlite3 $DATABASE "SELECT id, task, status FROM todos;" | while IFS="|" read -r id task status; do
+        echo "[$id] $task - $status"
+    done
+}
+
+mark_done() {
+    TODO_ID="$1"
+    sqlite3 $DATABASE "UPDATE todos SET status = 'done' WHERE id = $TODO_ID;"
+    echo "To-Do #$TODO_ID marked as done"
+}
+
+# Parse command line options
+while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+        -a|--add-quote)
+            if [ -n "$2" ]; then
+                add_quote "$2"
+                shift 2
+            else
+                echo "Error: --add-quote requires a quote."
+                usage
+                exit 1
+            fi
+            ;;
+        -v|--view-quotes)
+            view_quotes
+            shift
+            ;;
+        -t|--add-todo)
+            if [ -n "$2" ]; then
+                add_todo "$2"
+                shift 2
+            else
+                echo "Error: --add-todo requires a task."
+                usage
+                exit 1
+            fi
+            ;;
+        -l|--view-todos)
+            view_todos
+            shift
+            ;;
+        -d|--mark-done)
+            if [[ "$2" =~ ^[0-9]+$ ]]; then
+                mark_done "$2"
+                shift 2
+            else
+                echo "Error: --mark-done requires a numeric ID."
+                usage
+                exit 1
+            fi
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        *)
+            echo "Unknown option: $1"
+            usage
+            exit 1
+            ;;
+    esac
+done
+
+if [[ "$#" -eq 0 ]]; then
+    usage
+fi
+
