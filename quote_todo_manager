@@ -1,20 +1,16 @@
 #!/bin/bash
 
-DATABASE="mydatabase.db"
+# Set the path to the database
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DATABASE="$SCRIPT_DIR/mydatabase.db"
 
-# Ensure the database and tables are created
-sqlite3 $DATABASE <<EOF
-CREATE TABLE IF NOT EXISTS quotes (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    quote TEXT NOT NULL
-);
+echo "$SCRIPT_DIR"
 
-CREATE TABLE IF NOT EXISTS todos (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    task TEXT NOT NULL,
-    status TEXT NOT NULL DEFAULT 'pending'
-);
-EOF
+# Ensure the database file exists
+if [ ! -f "$DATABASE" ]; then
+    sqlite3 "$DATABASE" "CREATE TABLE IF NOT EXISTS quotes (id INTEGER PRIMARY KEY, quote TEXT);
+                          CREATE TABLE IF NOT EXISTS todos (id INTEGER PRIMARY KEY, task TEXT, done BOOLEAN);"
+fi
 
 usage() {
     echo "Usage: $0 [option]"
