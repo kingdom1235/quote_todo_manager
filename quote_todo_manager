@@ -4,109 +4,139 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DATABASE="$SCRIPT_DIR/mydatabase.db"
 
-echo "$SCRIPT_DIR"
-
 # Ensure the database file exists
 if [ ! -f "$DATABASE" ]; then
     sqlite3 "$DATABASE" "CREATE TABLE IF NOT EXISTS quotes (id INTEGER PRIMARY KEY, quote TEXT);
                           CREATE TABLE IF NOT EXISTS todos (id INTEGER PRIMARY KEY, task TEXT, done BOOLEAN);"
 fi
 
-usage() {
-    echo "Usage: $0 [option]"
+function show_help {
+    echo "Usage: quote_todo_manager [option]"
+    echo ""
     echo "Options:"
-    echo "  -a, --add-quote QUOTE       Add a new quote"
-    echo "  -v, --view-quotes           View all quotes"
-    echo "  -t, --add-todo TASK         Add a new to-do"
-    echo "  -l, --view-todos            View all to-dos"
-    echo "  -d, --mark-done ID          Mark a to-do as done by ID"
-    echo "  -h, --help                  Show this help message"
+    echo "  -a, --add-quote QUOTE        Add a new quote"
+    echo "  -v, --view-quotes            View all quotes"
+    echo "  -d, --delete-quote ID        Delete a quote by ID"
+    echo "  -t, --add-todo TASK          Add a new to-do"
+    echo "  -l, --view-todos             View all to-dos"
+    echo "  -r, --delete-todo ID         Delete a to-do by ID"
+    echo "  -m, --mark-done ID           Mark a to-do as done by ID"
+    echo "  -h, --help                   Show this help message"
 }
 
-add_quote() {
-    QUOTE="$1"
-    sqlite3 $DATABASE "INSERT INTO quotes (quote) VALUES ('$QUOTE');"
-    echo "Quote added: $QUOTE"
+function add_quote {
+    local quote="$1"
+    if [ -z "$quote" ]; then
+        echo "Error: Quote cannot be empty."
+        exit 1
+    fi
+    sqlite3 "$DATABASE" "INSERT INTO quotes (quote) VALUES ('$quote');"
+    echo "Quote added: $quote"
 }
 
-view_quotes() {
-    sqlite3 $DATABASE "SELECT id, quote FROM quotes;" | while IFS="|" read -r id quote; do
-        echo "[$id] $quote"
+function view_quotes {
+    sqlite3 "$DATABASE" "SELECT id, quote FROM quotes;" | while IFS="|" read -r id quote; do
+        echo "$id: $quote"
     done
 }
 
-add_todo() {
-    TASK="$1"
-    sqlite3 $DATABASE "INSERT INTO todos (task) VALUES ('$TASK');"
-    echo "To-Do added: $TASK"
+function delete_quote {
+    local id="$1"
+    if ! [[ "$id" =~ ^[0-9]+$ ]]; then
+        echo "Error: Quote ID must be a number."
+        exit 1
+    fi
+    sqlite3 "$DATABASE" "DELETE FROM quotes WHERE id = $id;"
+    echo "Quote $id deleted"
 }
 
-view_todos() {
-    sqlite3 $DATABASE "SELECT id, task, status FROM todos;" | while IFS="|" read -r id task status; do
-        echo "[$id] $task - $status"
+function add_todo {
+    local task="$1"
+    if [ -z "$task" ]; then
+        echo "Error: Task cannot be empty."
+        exit 1
+    fi
+    sqlite3 "$DATABASE" "INSERT INTO todos (task, done) VALUES ('$task', 0);"
+    echo "To-do added: $task"
+}
+
+function view_todos {
+    sqlite3 "$DATABASE" "SELECT id, task, done FROM todos;" | while IFS="|" read -r id task done; do
+        status="pending"
+        [ "$done" -eq 1 ] && status="done"
+        echo "$id: $task [$status]"
     done
 }
 
-mark_done() {
-    TODO_ID="$1"
-    sqlite3 $DATABASE "UPDATE todos SET status = 'done' WHERE id = $TODO_ID;"
-    echo "To-Do #$TODO_ID marked as done"
+function delete_todo {
+    local id="$1"
+    if ! [[ "$id" =~ ^[0-9]+$ ]]; then
+        echo "Error: To-do ID must be a number."
+        exit 1
+    fi
+    sqlite3 "$DATABASE" "DELETE FROM todos WHERE id = $id;"
+    echo "To-do $id deleted"
 }
 
-# Parse command line options
-while [[ "$#" -gt 0 ]]; do
-    case "$1" in
-        -a|--add-quote)
-            if [ -n "$2" ]; then
-                add_quote "$2"
-                shift 2
-            else
-                echo "Error: --add-quote requires a quote."
-                usage
-                exit 1
-            fi
-            ;;
-        -v|--view-quotes)
-            view_quotes
-            shift
-            ;;
-        -t|--add-todo)
-            if [ -n "$2" ]; then
-                add_todo "$2"
-                shift 2
-            else
-                echo "Error: --add-todo requires a task."
-                usage
-                exit 1
-            fi
-            ;;
-        -l|--view-todos)
-            view_todos
-            shift
-            ;;
-        -d|--mark-done)
-            if [[ "$2" =~ ^[0-9]+$ ]]; then
-                mark_done "$2"
-                shift 2
-            else
-                echo "Error: --mark-done requires a numeric ID."
-                usage
-                exit 1
-            fi
-            ;;
-        -h|--help)
-            usage
-            exit 0
-            ;;
-        *)
-            echo "Unknown option: $1"
-            usage
+function mark_done {
+    local id="$1"
+    if ! [[ "$id" =~ ^[0-9]+$ ]]; then
+        echo "Error: To-do ID must be a number."
+        exit 1
+    fi
+    sqlite3 "$DATABASE" "UPDATE todos SET done = 1 WHERE id = $id;"
+    echo "To-do $id marked as done"
+}
+
+case "$1" in
+    -a|--add-quote)
+        if [ -z "$2" ]; then
+            echo "Error: No quote provided."
+            show_help
             exit 1
-            ;;
-    esac
-done
-
-if [[ "$#" -eq 0 ]]; then
-    usage
-fi
+        fi
+        add_quote "$2"
+        ;;
+    -v|--view-quotes)
+        view_quotes
+        ;;
+    -d|--delete-quote)
+        if [ -z "$2" ]; then
+            echo "Error: No quote ID provided."
+            show_help
+            exit 1
+        fi
+        delete_quote "$2"
+        ;;
+    -t|--add-todo)
+        if [ -z "$2" ]; then
+            echo "Error: No task provided."
+            show_help
+            exit 1
+        fi
+        add_todo "$2"
+        ;;
+    -l|--view-todos)
+        view_todos
+        ;;
+    -r|--delete-todo)
+        if [ -z "$2" ]; then
+            echo "Error: No to-do ID provided."
+            show_help
+            exit 1
+        fi
+        delete_todo "$2"
+        ;;
+    -m|--mark-done)
+        if [ -z "$2" ]; then
+            echo "Error: No to-do ID provided."
+            show_help
+            exit 1
+        fi
+        mark_done "$2"
+        ;;
+    -h|--help|*)
+        show_help
+        ;;
+esac
 
