@@ -10,6 +10,7 @@ chmod +x "$SCRIPT_NAME"
 if ! echo "$PATH" | grep -q "$SCRIPT_DIR"; then
     echo "Adding $SCRIPT_DIR to your PATH."
     echo "export PATH=\$PATH:$SCRIPT_DIR" >> ~/.bashrc
+	echo "alias qtm='quote_todo_manager'" >> ~/.bashrc
     source ~/.bashrc
     echo -e "\033[1;32m$SCRIPT_DIR has been added to your PATH. Please restart your terminal.\033[0m"
 else
