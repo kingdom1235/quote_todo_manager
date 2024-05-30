@@ -11,27 +11,29 @@ if [ ! -f "$DATABASE" ]; then
 fi
 
 function show_help {
-    echo "Usage: quote_todo_manager [option]"
+    echo "Usage: quote_todo_manager [option] [arguments...]"
     echo ""
     echo "Options:"
-    echo "  -a, --add-quote QUOTE        Add a new quote"
+    echo "  -a, --add-quote QUOTE...     Add one or more quotes"
     echo "  -v, --view-quotes            View all quotes"
-    echo "  -d, --delete-quote ID        Delete a quote by ID"
-    echo "  -t, --add-todo TASK          Add a new to-do"
+    echo "  -d, --delete-quote ID...     Delete one or more quotes by ID"
+    echo "  -t, --add-todo TASK...       Add one or more to-dos"
     echo "  -l, --view-todos             View all to-dos"
-    echo "  -r, --delete-todo ID         Delete a to-do by ID"
+    echo "  -r, --delete-todo ID...      Delete one or more to-dos by ID"
     echo "  -m, --mark-done ID           Mark a to-do as done by ID"
     echo "  -h, --help                   Show this help message"
 }
 
 function add_quote {
-    local quote="$1"
-    if [ -z "$quote" ]; then
-        echo "Error: Quote cannot be empty."
+    local quotes=("$@")
+    if [ ${#quotes[@]} -eq 0 ]; then
+        echo "Error: No quote provided."
         exit 1
     fi
-    sqlite3 "$DATABASE" "INSERT INTO quotes (quote) VALUES ('$quote');"
-    echo "Quote added: $quote"
+    for quote in "${quotes[@]}"; do
+        sqlite3 "$DATABASE" "INSERT INTO quotes (quote) VALUES ('$quote');"
+        echo "Quote added: $quote"
+    done
 }
 
 function view_quotes {
@@ -41,23 +43,31 @@ function view_quotes {
 }
 
 function delete_quote {
-    local id="$1"
-    if ! [[ "$id" =~ ^[0-9]+$ ]]; then
-        echo "Error: Quote ID must be a number."
+    local ids=("$@")
+    if [ ${#ids[@]} -eq 0 ]; then
+        echo "Error: No quote ID provided."
         exit 1
     fi
-    sqlite3 "$DATABASE" "DELETE FROM quotes WHERE id = $id;"
-    echo "Quote $id deleted"
+    for id in "${ids[@]}"; do
+        if ! [[ "$id" =~ ^[0-9]+$ ]]; then
+            echo "Error: Quote ID must be a number."
+            exit 1
+        fi
+        sqlite3 "$DATABASE" "DELETE FROM quotes WHERE id = $id;"
+        echo "Quote $id deleted"
+    done
 }
 
 function add_todo {
-    local task="$1"
-    if [ -z "$task" ]; then
-        echo "Error: Task cannot be empty."
+    local tasks=("$@")
+    if [ ${#tasks[@]} -eq 0 ]; then
+        echo "Error: No task provided."
         exit 1
     fi
-    sqlite3 "$DATABASE" "INSERT INTO todos (task, done) VALUES ('$task', 0);"
-    echo "To-do added: $task"
+    for task in "${tasks[@]}"; do
+        sqlite3 "$DATABASE" "INSERT INTO todos (task, done) VALUES ('$task', 0);"
+        echo "To-do added: $task"
+    done
 }
 
 function view_todos {
@@ -69,13 +79,19 @@ function view_todos {
 }
 
 function delete_todo {
-    local id="$1"
-    if ! [[ "$id" =~ ^[0-9]+$ ]]; then
-        echo "Error: To-do ID must be a number."
+    local ids=("$@")
+    if [ ${#ids[@]} -eq 0 ]; then
+        echo "Error: No to-do ID provided."
         exit 1
     fi
-    sqlite3 "$DATABASE" "DELETE FROM todos WHERE id = $id;"
-    echo "To-do $id deleted"
+    for id in "${ids[@]}"; do
+        if ! [[ "$id" =~ ^[0-9]+$ ]]; then
+            echo "Error: To-do ID must be a number."
+            exit 1
+        fi
+        sqlite3 "$DATABASE" "DELETE FROM todos WHERE id = $id;"
+        echo "To-do $id deleted"
+    done
 }
 
 function mark_done {
@@ -90,42 +106,26 @@ function mark_done {
 
 case "$1" in
     -a|--add-quote)
-        if [ -z "$2" ]; then
-            echo "Error: No quote provided."
-            show_help
-            exit 1
-        fi
-        add_quote "$2"
+        shift
+        add_quote "$@"
         ;;
     -v|--view-quotes)
         view_quotes
         ;;
     -d|--delete-quote)
-        if [ -z "$2" ]; then
-            echo "Error: No quote ID provided."
-            show_help
-            exit 1
-        fi
-        delete_quote "$2"
+        shift
+        delete_quote "$@"
         ;;
     -t|--add-todo)
-        if [ -z "$2" ]; then
-            echo "Error: No task provided."
-            show_help
-            exit 1
-        fi
-        add_todo "$2"
+        shift
+        add_todo "$@"
         ;;
     -l|--view-todos)
         view_todos
         ;;
     -r|--delete-todo)
-        if [ -z "$2" ]; then
-            echo "Error: No to-do ID provided."
-            show_help
-            exit 1
-        fi
-        delete_todo "$2"
+        shift
+        delete_todo "$@"
         ;;
     -m|--mark-done)
         if [ -z "$2" ]; then
