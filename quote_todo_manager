@@ -10,6 +10,12 @@ if [ ! -f "$DATABASE" ]; then
                           CREATE TABLE IF NOT EXISTS todos (id INTEGER PRIMARY KEY, task TEXT, done BOOLEAN);"
 fi
 
+# ANSI color codes
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
 function show_help {
     echo "Usage: quote_todo_manager [option] [arguments...]"
     echo ""
@@ -37,9 +43,12 @@ function add_quote {
 }
 
 function view_quotes {
+    echo -e "${BLUE}Quotes:${NC}"
+    echo "-------------------------------------"
     sqlite3 "$DATABASE" "SELECT id, quote FROM quotes ORDER BY id;" | while IFS="|" read -r id quote; do
-        echo "$id: $quote"
+        printf "%-4s: %s${NC}\n" "$id" "$quote"
     done
+    echo "-------------------------------------"
 }
 
 function delete_quote {
@@ -78,11 +87,14 @@ function add_todo {
 }
 
 function view_todos {
+    echo -e "${GREEN}To-dos:${NC}"
+    echo "-------------------------------------"
     sqlite3 "$DATABASE" "SELECT id, task, done FROM todos ORDER BY id;" | while IFS="|" read -r id task done; do
-        status="pending"
-        [ "$done" -eq 1 ] && status="done"
-        echo "$id: $task [$status]"
+        status="${RED}pending${NC}"
+        [ "$done" -eq 1 ] && status="${GREEN}done${NC}"
+        printf "%-4s: %-50s [%s]\n" "$id" "$task" "$status"
     done
+    echo "-------------------------------------"
 }
 
 function delete_todo {
@@ -91,7 +103,7 @@ function delete_todo {
         echo "Error: No to-do ID provided."
         exit 1
     fi
-    for id in "${ids[@]}"; do
+    for id in "${ids[@]}"]; do
         if ! [[ "$id" =~ ^[0-9]+$ ]]; then
             echo "Error: To-do ID must be a number."
             exit 1
