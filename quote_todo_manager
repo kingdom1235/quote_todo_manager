@@ -37,7 +37,7 @@ function add_quote {
 }
 
 function view_quotes {
-    sqlite3 "$DATABASE" "SELECT id, quote FROM quotes;" | while IFS="|" read -r id quote; do
+    sqlite3 "$DATABASE" "SELECT id, quote FROM quotes ORDER BY id;" | while IFS="|" read -r id quote; do
         echo "$id: $quote"
     done
 }
@@ -56,6 +56,13 @@ function delete_quote {
         sqlite3 "$DATABASE" "DELETE FROM quotes WHERE id = $id;"
         echo "Quote $id deleted"
     done
+    # Reassign IDs to keep them consecutive
+    sqlite3 "$DATABASE" "WITH RECURSIVE temp AS (
+                              SELECT id, quote, ROW_NUMBER() OVER (ORDER BY id) AS new_id
+                              FROM quotes
+                          )
+                          UPDATE quotes
+                          SET id = (SELECT new_id FROM temp WHERE quotes.id = temp.id);"
 }
 
 function add_todo {
@@ -71,7 +78,7 @@ function add_todo {
 }
 
 function view_todos {
-    sqlite3 "$DATABASE" "SELECT id, task, done FROM todos;" | while IFS="|" read -r id task done; do
+    sqlite3 "$DATABASE" "SELECT id, task, done FROM todos ORDER BY id;" | while IFS="|" read -r id task done; do
         status="pending"
         [ "$done" -eq 1 ] && status="done"
         echo "$id: $task [$status]"
@@ -92,6 +99,13 @@ function delete_todo {
         sqlite3 "$DATABASE" "DELETE FROM todos WHERE id = $id;"
         echo "To-do $id deleted"
     done
+    # Reassign IDs to keep them consecutive
+    sqlite3 "$DATABASE" "WITH RECURSIVE temp AS (
+                              SELECT id, task, done, ROW_NUMBER() OVER (ORDER BY id) AS new_id
+                              FROM todos
+                          )
+                          UPDATE todos
+                          SET id = (SELECT new_id FROM temp WHERE todos.id = temp.id);"
 }
 
 function mark_done {
