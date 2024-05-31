@@ -44,11 +44,13 @@ function add_quote {
 
 function view_quotes {
     echo -e "${BLUE}Quotes:${NC}"
-    echo "-------------------------------------"
+    echo "---------------------------------------------"
+    printf "%-5s | %-s\n" "ID" "Quote"
+    echo "---------------------------------------------"
     sqlite3 "$DATABASE" "SELECT id, quote FROM quotes ORDER BY id;" | while IFS="|" read -r id quote; do
-        printf "%-4s: %s${NC}\n" "$id" "$quote"
+        printf "%-5s | %-s\n" "$id" "$quote"
     done
-    echo "-------------------------------------"
+    echo "---------------------------------------------"
 }
 
 function delete_quote {
@@ -88,13 +90,15 @@ function add_todo {
 
 function view_todos {
     echo -e "${GREEN}To-dos:${NC}"
-    echo "-------------------------------------"
+    echo "-----------------------------------------------------------"
+    printf "%-5s | %-50s | %-6s\n" "ID" "Task" "Status"
+    echo "-----------------------------------------------------------"
     sqlite3 "$DATABASE" "SELECT id, task, done FROM todos ORDER BY id;" | while IFS="|" read -r id task done; do
-        status="${RED}pending${NC}"
-        [ "$done" -eq 1 ] && status="${GREEN}done${NC}"
-        printf "%-4s: %-50s [%s]\n" "$id" "$task" "$status"
+        status="pending"
+        [ "$done" -eq 1 ] && status="done"
+        printf "%-5s | %-50s | %-6s\n" "$id" "$task" "$status"
     done
-    echo "-------------------------------------"
+    echo "-----------------------------------------------------------"
 }
 
 function delete_todo {
