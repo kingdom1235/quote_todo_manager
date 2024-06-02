@@ -35,6 +35,7 @@ cd quote_todo_manager
 You can use the quote_todo_manager script with various options 
 to manage your quotes and to-dos.
 
+```bash
 Usage: quote_todo_manager [option] [arguments...]
 
 Options:
@@ -46,4 +47,4 @@ Options:
   -r, --delete-todo ID...      Delete one or more to-dos by ID
   -m, --mark-done ID           Mark a to-do as done by ID
   -h, --help                   Show this help message
-
+```
