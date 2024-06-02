@@ -16,7 +16,7 @@ sudo apt update
 sudo apt install -y bash sqlite3
 ```
 
-# Installation
+## Installation
 
 Follow these steps to install the Quote and To-Do Manager
 
@@ -31,7 +31,7 @@ cd quote_todo_manager
 ./install.sh
 ```
 
-# Usage
+## Usage
 You can use the quote_todo_manager script with various options 
 to manage your quotes and to-dos.
 
