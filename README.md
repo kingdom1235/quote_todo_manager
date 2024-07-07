@@ -22,7 +22,7 @@ Follow these steps to install the Quote and To-Do Manager
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/quote_todo_manager.git
+git clone https://github.com/kingdom1235/quote_todo_manager.git
 cd quote_todo_manager
 ```
 
